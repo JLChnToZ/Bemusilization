@@ -1,40 +1,37 @@
 ﻿using System;
 using System.IO;
 using System.Text;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 using System.Linq;
 using System.Threading;
 
 using BMS;
+using ManagedBass;
 
 namespace SimpleBMSPlayer {
-    // This is a simple demo using NAudio and Bemusilisation to play BMS sounds
+    // This is a simple demo using BASS and Bemusilisation to play BMS sounds
     class Program {
         static Encoding shiftJIS = Encoding.GetEncoding(932);
-        static Dictionary<long, CachedSound> soundDictionary = new Dictionary<long, CachedSound>();
-        static ConcurrentQueue<CachedSound> pendingPlaySound = new ConcurrentQueue<CachedSound>();
+        static Dictionary<long, int> resources = new Dictionary<long, int>();
 
         static void Main(string[] args) {
             Console.OutputEncoding = Encoding.UTF8;
+            if(!Bass.Init()) {
+                Console.WriteLine("Bass Library Load Failed! {0}", Bass.LastError);
+                Console.ReadKey(true);
+            }
 
-            Thread playSoundThread = new Thread(HandlePlaySound) {
-                Priority = ThreadPriority.BelowNormal
-            };
-            playSoundThread.Start();
-
-            ThreadPool.SetMaxThreads(256, 512);
             foreach(string arg in args)
                 try {
                     ParseFile(arg);
-                    Console.ReadKey(false);
+                    Console.ReadKey(true);
                 } catch(Exception ex) {
                     Console.WriteLine(ex.Message);
                 }
 
-            playSoundThread.Abort();
-            AudioPlaybackEngine.Instance.Dispose();
+            Bass.Stop();
+            Bass.Free();
         }
 
         static void ParseFile(string path) {
@@ -83,26 +80,38 @@ namespace SimpleBMSPlayer {
             CountDensity(chart, out min, out max, out average, out mean);
             Console.WriteLine("Note Density (Notes per second): ({0} ~ {1})\nAverage {2} Mean {3}", min, max, average, mean);
 
-            soundDictionary.Clear();
-            int cursorPos = Console.CursorTop;
+            Console.ReadKey(true);
+            
+            foreach(int streamId in resources.Values)
+                Bass.StreamFree(streamId);
+            resources.Clear();
+
             foreach(BMSResourceData res in chart.IterateResourceData(ResourceType.wav)) {
                 try {
-                    Console.SetCursorPosition(0, cursorPos);
                     Console.WriteLine("Load resource: {0} to {1}", res.dataPath, res.resourceId);
                     FileInfo resFileInfo = FindRes(fileInfo.DirectoryName, res.dataPath, ".wav");
-                    if(resFileInfo != null)
-                        soundDictionary[res.resourceId] = new CachedSound(resFileInfo.FullName);
+                    if(resFileInfo != null) {
+                        int streamId;
+                        if(resources.TryGetValue(res.resourceId, out streamId))
+                            Bass.StreamFree(streamId);
+                        streamId = Bass.CreateStream(
+                            resFileInfo.FullName, 0, 0,
+                            BassFlags.Prescan
+                        );
+                        if(streamId != 0)
+                            resources[res.resourceId] = streamId;
+                        else
+                            Console.WriteLine("Failed to load {0}: {1}", resFileInfo.Name, Bass.LastError);
+                    }
                 } catch(Exception ex) {
                     Console.WriteLine(ex.Message);
                 }
             }
 
-            Thread playThread = new Thread(PlayBMSChart) {
-                Priority = ThreadPriority.BelowNormal
-            };
+            Console.WriteLine();
 
             dispatcher.BMSEvent += OnBmsEvent;
-            playThread.Start(dispatcher);
+            PlayBMSChart(dispatcher);
 
             Console.WriteLine();
             Console.WriteLine();
@@ -111,8 +120,8 @@ namespace SimpleBMSPlayer {
         static void PlayBMSChart(object obj) {
             Chart.EventDispatcher dispatcher = obj as Chart.EventDispatcher;
             DateTime startDateTime = DateTime.Now;
-            for(TimeSpan current = TimeSpan.Zero, end = dispatcher.EndTime; current < end; current = DateTime.Now - startDateTime) {
-                ThreadPool.QueueUserWorkItem(stateInfo => dispatcher.Seek(current));
+            for(TimeSpan current = TimeSpan.Zero, end = dispatcher.EndTime; current <= end; current = DateTime.Now - startDateTime) {
+                dispatcher.Seek(current);
                 Thread.Sleep(0);
             }
         }
@@ -144,7 +153,10 @@ namespace SimpleBMSPlayer {
                     Console.WriteLine("{0,-17} Note released {2} in channel {1}", bmsEvent.time, bmsEvent.data1, bmsEvent.data2);
                     return;
             }
-            PlaySound(bmsEvent.data2);
+            int streamId;
+            if(resources.TryGetValue(bmsEvent.data2, out streamId))
+                if(!Bass.ChannelPlay(streamId, true))
+                    Console.WriteLine("Failed to play sound: {0}", Bass.LastError);
         }
 
         static void CountDensity(Chart chart, out float min, out float max, out float average, out float mean) {
@@ -181,23 +193,8 @@ namespace SimpleBMSPlayer {
             float meanIndex = totalCount / 2F - 1;
             mean = (chunkCount[(int)Math.Floor(meanIndex)] + chunkCount[(int)Math.Ceiling(meanIndex)]) / 2;
         }
-
-        static void HandlePlaySound() {
-            while(true) {
-                CachedSound cachedSound;
-                while(pendingPlaySound.TryDequeue(out cachedSound)) {
-                    try {
-                        AudioPlaybackEngine.Instance.PlaySound(cachedSound);
-                    } catch { }
-                }
-                Thread.Sleep(0);
-            }
-        }
-
+        
         static void PlaySound(long resId) {
-            CachedSound cachedSound;
-            if(soundDictionary.TryGetValue(resId, out cachedSound) && cachedSound != null)
-                pendingPlaySound.Enqueue(cachedSound);
         }
 
         static FileInfo FindRes(string basePath, string originalPath, string checkType) {
