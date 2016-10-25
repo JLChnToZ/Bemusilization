@@ -8,13 +8,15 @@ using System.Linq;
 using System.Threading;
 
 using BMS;
+using Ude;
 
 namespace SimpleBMSPlayer {
     // This is a simple demo using NAudio and Bemusilisation to play BMS sounds
     class Program {
         static Encoding shiftJIS = Encoding.GetEncoding(932);
-        static Dictionary<long, CachedSound> soundDictionary = new Dictionary<long, CachedSound>();
+        static Dictionary<long, CachedSound> resources = new Dictionary<long, CachedSound>();
         static ConcurrentQueue<CachedSound> pendingPlaySound = new ConcurrentQueue<CachedSound>();
+        static Dictionary<long, TimeSpan> timeLengths = new Dictionary<long, TimeSpan>();
 
         static void Main(string[] args) {
             Console.OutputEncoding = Encoding.UTF8;
@@ -44,10 +46,8 @@ namespace SimpleBMSPlayer {
                 return;
             }
 
-            string fileContent;
-            using(Stream stream = fileInfo.OpenRead())
-            using(StreamReader reader = new StreamReader(stream, shiftJIS))
-                fileContent = reader.ReadToEnd();
+            Console.WriteLine("File: {0}", fileInfo.Name);
+            string fileContent = LoadFileContent(fileInfo);
 
             Chart chart;
             switch(fileInfo.Extension.ToLower()) {
@@ -65,10 +65,9 @@ namespace SimpleBMSPlayer {
                     return;
             }
             chart.Parse(ParseType.Header | ParseType.Content | ParseType.Resources);
-            Chart.EventDispatcher dispatcher = chart.GetEventDispatcher();
+            LoadAllResources(chart, fileInfo);
 
             Console.WriteLine("BMS Meta Data:");
-            Console.WriteLine("File: {0}", fileInfo.Name);
             Console.WriteLine("Title: {0}\n{1}", chart.Title, chart.SubTitle);
             Console.WriteLine("Artist: {0}\n{1}", chart.Artist, chart.SubArtist);
             Console.WriteLine("Genre: {0}", chart.Genre);
@@ -76,75 +75,146 @@ namespace SimpleBMSPlayer {
             Console.WriteLine("Level: {0} (Rank {1})", chart.PlayLevel, chart.Rank);
             Console.WriteLine("BPM: {0} (Min. {1})", chart.BPM, chart.MinBPM);
             Console.WriteLine("Maximum Combos: {0}", chart.MaxCombos);
-            Console.WriteLine("Duration: {0}", dispatcher.EndTime);
+            Console.WriteLine("Duration: {0}", GetLength(chart));
             Console.WriteLine("Randomized: {0}", chart.Randomized);
 
             float min, max, average, mean;
             CountDensity(chart, out min, out max, out average, out mean);
             Console.WriteLine("Note Density (Notes per second): ({0} ~ {1})\nAverage {2} Mean {3}", min, max, average, mean);
 
-            soundDictionary.Clear();
-            int cursorPos = Console.CursorTop;
+            Console.ReadKey(true);
+
+            Console.WriteLine();
+
+            Chart.EventDispatcher dispatcher = chart.GetEventDispatcher();
+            dispatcher.BMSEvent += OnBmsEvent;
+            PlayBMSChart(dispatcher);
+
+            Console.WriteLine();
+            Console.WriteLine();
+        }
+
+        static string LoadFileContent(FileInfo fileInfo) {
+            string result;
+            Encoding encoding = shiftJIS;
+            using(Stream stream = fileInfo.OpenRead()) {
+                CharsetDetector detector = new CharsetDetector();
+                detector.Feed(stream);
+                detector.DataEnd();
+                stream.Position = 0;
+                if(detector.Charset != null) {
+                    Console.WriteLine("Detected charset of file: {0}", detector.Charset);
+                    encoding = Encoding.GetEncoding(detector.Charset);
+                } else {
+                    Console.WriteLine("Failed to detect charset, will use default encoding.");
+                }
+                using(StreamReader reader = new StreamReader(stream, encoding))
+                    result = reader.ReadToEnd();
+            }
+            return result;
+        }
+
+        static void LoadAllResources(Chart chart, FileInfo fileInfo) {
+            resources.Clear();
+            timeLengths.Clear();
+
+            int pos = Console.CursorTop;
             foreach(BMSResourceData res in chart.IterateResourceData(ResourceType.wav)) {
                 try {
-                    Console.SetCursorPosition(0, cursorPos);
-                    Console.WriteLine("Load resource: {0} to {1}", res.dataPath, res.resourceId);
+                    Console.SetCursorPosition(0, pos);
+                    Console.Write("Load resource: {0} to {1}...", res.dataPath, res.resourceId);
                     FileInfo resFileInfo = FindRes(fileInfo.DirectoryName, res.dataPath, ".wav");
                     if(resFileInfo != null)
-                        soundDictionary[res.resourceId] = new CachedSound(resFileInfo.FullName);
+                        resources[res.resourceId] = new CachedSound(resFileInfo.FullName);
                 } catch(Exception ex) {
                     Console.WriteLine(ex.Message);
                 }
             }
-
-            Thread playThread = new Thread(PlayBMSChart) {
-                Priority = ThreadPriority.BelowNormal
-            };
-
-            dispatcher.BMSEvent += OnBmsEvent;
-            playThread.Start(dispatcher);
-
             Console.WriteLine();
-            Console.WriteLine();
+        }
+
+        static TimeSpan GetLength(Chart chart) {
+            TimeSpan t = TimeSpan.Zero;
+            foreach(BMSEvent ev in chart.Events) {
+                TimeSpan length;
+                if(ev.IsNote && ev.type != BMSEventType.LongNoteEnd) {
+                    if(timeLengths.TryGetValue(ev.data2, out length))
+                        length += ev.time;
+                    else
+                        length = ev.time;
+                } else {
+                    length = ev.time;
+                }
+                if(t < length) t = length;
+            }
+            return t;
         }
 
         static void PlayBMSChart(object obj) {
             Chart.EventDispatcher dispatcher = obj as Chart.EventDispatcher;
             DateTime startDateTime = DateTime.Now;
-            for(TimeSpan current = TimeSpan.Zero, end = dispatcher.EndTime; current < end; current = DateTime.Now - startDateTime) {
-                ThreadPool.QueueUserWorkItem(stateInfo => dispatcher.Seek(current));
+            for(TimeSpan current = TimeSpan.Zero, end = dispatcher.EndTime + TimeSpan.FromSeconds(1); current <= end; current = DateTime.Now - startDateTime) {
+                dispatcher.Seek(current);
                 Thread.Sleep(0);
             }
+        }
+
+        static void HandlePlaySound() {
+            while(true) {
+                CachedSound cachedSound;
+                while(pendingPlaySound.TryDequeue(out cachedSound)) {
+                    try {
+                        AudioPlaybackEngine.Instance.PlaySound(cachedSound);
+                    } catch { }
+                }
+                Thread.Sleep(0);
+            }
+        }
+
+        static void PlaySound(long resId) {
+            CachedSound cachedSound;
+            if(resources.TryGetValue(resId, out cachedSound) && cachedSound != null)
+                pendingPlaySound.Enqueue(cachedSound);
         }
 
         static void OnBmsEvent(BMSEvent bmsEvent) {
             switch(bmsEvent.type) {
                 case BMSEventType.BeatReset:
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
                     Console.WriteLine("{0,-17} Beat reset to {1}", bmsEvent.time, BitConverter.Int64BitsToDouble(bmsEvent.data2));
                     return;
                 case BMSEventType.BPM:
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
                     Console.WriteLine("{0,-17} BPM changed to {1}", bmsEvent.time, BitConverter.Int64BitsToDouble(bmsEvent.data2));
                     return;
                 case BMSEventType.STOP:
-                    Console.WriteLine("{0,-17} STOP event for {1}", bmsEvent.time, BitConverter.Int64BitsToDouble(bmsEvent.data2));
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine("{0,-17} STOP event for {1}", bmsEvent.time, new TimeSpan(bmsEvent.data2));
                     return;
                 case BMSEventType.BMP:
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
                     Console.WriteLine("{0,-17} BGA changed to {2} in channel {1}", bmsEvent.time, bmsEvent.data1, bmsEvent.data2);
                     return;
                 case BMSEventType.WAV:
+                    Console.ResetColor();
                     Console.WriteLine("{0,-17} Play BGM {1}", bmsEvent.time, bmsEvent.data2);
                     break;
                 case BMSEventType.Note:
+                    Console.ResetColor();
                     Console.WriteLine("{0,-17} Note click {2} in channel {1}", bmsEvent.time, bmsEvent.data1, bmsEvent.data2);
                     break;
                 case BMSEventType.LongNoteStart:
+                    Console.ResetColor();
                     Console.WriteLine("{0,-17} Note hold {2} in channel {1}", bmsEvent.time, bmsEvent.data1, bmsEvent.data2);
                     break;
                 case BMSEventType.LongNoteEnd:
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
                     Console.WriteLine("{0,-17} Note released {2} in channel {1}", bmsEvent.time, bmsEvent.data1, bmsEvent.data2);
                     return;
             }
-            PlaySound(bmsEvent.data2);
+            CachedSound audio;
+            if(resources.TryGetValue(bmsEvent.data2, out audio))
+                pendingPlaySound.Enqueue(audio);
         }
 
         static void CountDensity(Chart chart, out float min, out float max, out float average, out float mean) {
@@ -180,24 +250,6 @@ namespace SimpleBMSPlayer {
             average = chunkCount.Average();
             float meanIndex = totalCount / 2F - 1;
             mean = (chunkCount[(int)Math.Floor(meanIndex)] + chunkCount[(int)Math.Ceiling(meanIndex)]) / 2;
-        }
-
-        static void HandlePlaySound() {
-            while(true) {
-                CachedSound cachedSound;
-                while(pendingPlaySound.TryDequeue(out cachedSound)) {
-                    try {
-                        AudioPlaybackEngine.Instance.PlaySound(cachedSound);
-                    } catch { }
-                }
-                Thread.Sleep(0);
-            }
-        }
-
-        static void PlaySound(long resId) {
-            CachedSound cachedSound;
-            if(soundDictionary.TryGetValue(resId, out cachedSound) && cachedSound != null)
-                pendingPlaySound.Enqueue(cachedSound);
         }
 
         static FileInfo FindRes(string basePath, string originalPath, string checkType) {
