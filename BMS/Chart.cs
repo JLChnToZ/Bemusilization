@@ -262,6 +262,11 @@ namespace BMS {
         public long data2;
         public TimeSpan sliceStart, sliceEnd;
 
+        public double Data2F {
+            get { return BitConverter.Int64BitsToDouble(data2); }
+            set { data2 = BitConverter.DoubleToInt64Bits(value); }
+        }
+
         public bool IsNote {
             get {
                 return type == BMSEventType.Note ||

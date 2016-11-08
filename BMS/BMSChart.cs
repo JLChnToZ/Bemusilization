@@ -231,7 +231,7 @@ namespace BMS {
                     bmev.InsertInOrdered(new BMSEvent {
                         measure = verse,
                         beat = 0,
-                        data2 = BitConverter.DoubleToInt64Bits(double.Parse(strParam1)),
+                        Data2F = double.Parse(strParam1),
                         type = BMSEventType.BeatReset
                     });
                     return true;
@@ -340,7 +340,7 @@ namespace BMS {
                 measure = 0,
                 beat = 0,
                 type = BMSEventType.BPM,
-                data2 = BitConverter.DoubleToInt64Bits(bpm)
+                Data2F = bpm
             });
 
             foreach(BMSEvent ev in bmev) {
@@ -365,18 +365,18 @@ namespace BMS {
                         if(newBpm == bpm)
                             continue;
                         converted.type = BMSEventType.BPM;
-                        converted.data2 = BitConverter.DoubleToInt64Bits(newBpm);
+                        converted.Data2F = newBpm;
                         referenceTimePoint = converted.time;
                         beatOffset = ev.measure + ev.beat;
                         bpm = newBpm;
                         minBpm = Math.Min(minBpm, (float)newBpm);
                         break;
                     case BMSEventType.BeatReset:
-                        double newBeatPerMeas = BitConverter.Int64BitsToDouble(ev.data2);
+                        double newBeatPerMeas = ev.Data2F;
                         if(newBeatPerMeas == beatPerMeas)
                             continue;
                         converted.type = BMSEventType.BeatReset;
-                        converted.data2 = BitConverter.DoubleToInt64Bits(BitConverter.Int64BitsToDouble(ev.data2) * 4);
+                        converted.Data2F = ev.Data2F * 4;
                         beatOffset = ev.measure;
                         beatPerMeas = newBeatPerMeas;
                         referenceTimePoint = converted.time;
@@ -445,11 +445,11 @@ namespace BMS {
                 BMSEvent currentEv = beatResetEvents[i];
                 int meas = currentEv.measure;
                 if(i == l - 1 || (beatResetEvents[i + 1].measure - meas > 1 &&
-                    BitConverter.Int64BitsToDouble(currentEv.data2) != 1))
+                    currentEv.Data2F != 1))
                     bmev.InsertInOrdered(new BMSEvent {
                         measure = meas + 1,
                         beat = 0,
-                        data2 = BitConverter.DoubleToInt64Bits(1),
+                        Data2F = 1,
                         type = BMSEventType.BeatReset
                     });
             }}

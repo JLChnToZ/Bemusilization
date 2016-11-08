@@ -54,7 +54,7 @@ namespace BMS {
                     type = BMSEventType.BPM,
                     ticks = 0,
                     time = TimeSpan.Zero,
-                    data2 = BitConverter.DoubleToInt64Bits(initialBPM)
+                    Data2F = initialBPM
                 };
             }
         }
@@ -127,7 +127,7 @@ namespace BMS {
                     bmev.InsertInOrdered(new BMSEvent {
                         type = BMSEventType.BeatReset,
                         ticks = lines[i],
-                        data2 = BitConverter.DoubleToInt64Bits((double)tickLength / tickResoultion)
+                        Data2F = (double)tickLength / tickResoultion
                     });
                     lastTickLength = tickLength;
                 }
@@ -141,7 +141,7 @@ namespace BMS {
                 bmev.InsertInOrdered(new BMSEvent {
                     type = BMSEventType.BPM,
                     ticks = bpmEvent.GetChild("y").AsInt32(),
-                    data2 = BitConverter.DoubleToInt64Bits(bpm)
+                    Data2F = bpm
                 });
                 minBpm = Math.Min((float)bpm, minBpm);
             }
@@ -310,7 +310,7 @@ namespace BMS {
             return referencePoint.time + new TimeSpan(
                 (long)Math.Round(
                     (double)(currentTicks - referencePoint.ticks) / tickResoultion /
-                    GetDoubleValue(referencePoint) *
+                    referencePoint.Data2F *
                     TimeSpan.TicksPerMinute
                 )
             );
@@ -352,10 +352,6 @@ namespace BMS {
                     if(x == 0) return 0;
                     return x + 10;
             }
-        }
-
-        private static double GetDoubleValue(BMSEvent bpmEvent) {
-            return BitConverter.Int64BitsToDouble(bpmEvent.data2);
         }
 
         private class TicksComparer: Comparer<BMSEvent> {
