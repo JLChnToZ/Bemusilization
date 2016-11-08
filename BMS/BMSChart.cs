@@ -94,7 +94,7 @@ namespace BMS {
 
                 // Resource part
                 if((parseType & ParseType.Resources) == ParseType.Resources) {
-                    if(ParseResourecLine(command2, param1, param2))
+                    if(ParseResourceLine(command2, param1, param2))
                         continue;
                 }
 
@@ -186,7 +186,7 @@ namespace BMS {
             return true;
         }
 
-        private bool ParseResourecLine(string command2, string strParam1, string strParam2) {
+        private bool ParseResourceLine(string command2, string strParam1, string strParam2) {
             switch(command2) {
                 case "wav":
                     AddResource(ResourceType.wav, Base36.Decode(strParam2), strParam1);
@@ -479,7 +479,7 @@ namespace BMS {
             ZA = 4510, ZB = 4511, ..., ZZ = 4535
             Illegal channel format: -99
         */
-        static int GetChannelNumberById(string channel) {
+        private static int GetChannelNumberById(string channel) {
             if(string.IsNullOrEmpty(channel) || channel.Length > 2) return -99;
             int channelRaw = Base36.Decode(channel);
             if(channelRaw < 0) return -99;
