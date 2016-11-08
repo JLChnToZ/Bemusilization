@@ -36,11 +36,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BMS\Base36.cs" />
+    <Compile Include="Deps\Base36.cs" />
     <Compile Include="BMS\BMSChart.cs" />
     <Compile Include="BMS\BmsonChart.cs" />
     <Compile Include="BMS\Chart.cs" />
-    <Compile Include="Deps\BinarySearch\BinarySearch.cs" />
+    <Compile Include="Deps\BinarySearch.cs" />
     <Compile Include="Deps\LitJson\LitJson.Extensions\BoxingPlaceHolder.cs" />
     <Compile Include="Deps\LitJson\LitJson.Extensions\Extensions.cs" />
     <Compile Include="Deps\LitJson\LitJson.Extensions\JsonDataConvertible.cs" />

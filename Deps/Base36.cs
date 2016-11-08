@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace BMS {
+namespace Utils {
     public static class Base36 {
         private const string CharList = "0123456789abcdefghijklmnopqrstuvwxyz";
 
