@@ -128,7 +128,7 @@ namespace BMS {
                         type = BMSEventType.BeatReset,
                         ticks = lines[i],
                         Data2F = (double)tickLength / tickResoultion
-                    });
+                    }, null, 0, -1, false);
                     lastTickLength = tickLength;
                 }
             }
@@ -142,7 +142,7 @@ namespace BMS {
                     type = BMSEventType.BPM,
                     ticks = bpmEvent.GetChild("y").AsInt32(),
                     Data2F = bpm
-                });
+                }, null, 0, -1, false);
                 minBpm = Math.Min((float)bpm, minBpm);
             }
         }
@@ -153,7 +153,7 @@ namespace BMS {
                     type = BMSEventType.STOP,
                     ticks = stopEvent.GetChild("y").AsInt32(),
                     data2 = stopEvent.GetChild("duration").AsInt64()
-                });
+                }, null, 0, -1, false);
         }
 
         private void CalculateTimingPoints(List<BMSEvent> bmev) {

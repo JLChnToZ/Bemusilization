@@ -259,7 +259,7 @@ namespace BMS {
                         type = evType,
                         data1 = channel,
                         data2 = value
-                    });
+                    }, null, 0, -1, false);
                 }
             }
             return true;

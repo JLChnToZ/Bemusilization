@@ -181,11 +181,11 @@ namespace SimpleBMSPlayer {
             switch(bmsEvent.type) {
                 case BMSEventType.BeatReset:
                     Console.ForegroundColor = ConsoleColor.DarkGray;
-                    Console.WriteLine("{0,-17} Beat reset to {1}", bmsEvent.time, BitConverter.Int64BitsToDouble(bmsEvent.data2));
+                    Console.WriteLine("{0,-17} Beat reset to {1}", bmsEvent.time, bmsEvent.Data2F);
                     return;
                 case BMSEventType.BPM:
                     Console.ForegroundColor = ConsoleColor.DarkGray;
-                    Console.WriteLine("{0,-17} BPM changed to {1}", bmsEvent.time, BitConverter.Int64BitsToDouble(bmsEvent.data2));
+                    Console.WriteLine("{0,-17} BPM changed to {1}", bmsEvent.time, bmsEvent.Data2F);
                     return;
                 case BMSEventType.STOP:
                     Console.ForegroundColor = ConsoleColor.DarkGray;

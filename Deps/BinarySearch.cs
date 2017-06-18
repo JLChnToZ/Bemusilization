@@ -3,6 +3,12 @@ using System.Collections.Generic;
 
 namespace Utils {
     public static class BinarySearch {
+        private const string LowerBoundOutOfRangeMsg = "Lower bound index must be greater or equals to " +
+            "0 but smaller than input length ({0}).";
+        private const string UpperBoundOutOfRangeMsg = "Upper bound index must be greater or equals to " +
+            "lower bound index ({0}) but smaller than input length ({1}).";
+        private const string AlterReadOnlyCollectionMsg = "Cannot alter a read-only collection.";
+
         public static int BinarySearchIndex<T>(
             this IList<T> sortedList, T key,
             BinarySearchMethod method = BinarySearchMethod.Exact,
@@ -14,20 +20,20 @@ namespace Utils {
             if(comparer == null)
                 comparer = Comparer<T>.Default;
             int count = sortedList.Count;
-            if(count == 0) return -1;
-            if(lowerBoundIndex < 0 || lowerBoundIndex >= count)
+            if(lowerBoundIndex < 0 || lowerBoundIndex > count || (count > 0 && lowerBoundIndex == count))
                 throw new ArgumentOutOfRangeException(
                     "lowerBoundIndex",
                     lowerBoundIndex,
-                    string.Format("Lower bound index must be greater or equals to 0 but smaller than input length ({0}).", count)
+                    string.Format(LowerBoundOutOfRangeMsg, count)
                 );
             if(upperBoundIndex < 0) upperBoundIndex = count + upperBoundIndex;
-            if(upperBoundIndex < lowerBoundIndex || upperBoundIndex >= count)
+            if((count > 0 && (upperBoundIndex == count || upperBoundIndex < lowerBoundIndex)) || upperBoundIndex > count)
                 throw new ArgumentOutOfRangeException(
                     "upperBoundIndex",
                     upperBoundIndex,
-                    string.Format("Upper bound index must be greater or equals to lower bound index ({0}) but smaller than input length ({1}).", lowerBoundIndex, count)
+                    string.Format(UpperBoundOutOfRangeMsg, lowerBoundIndex, count)
                 );
+            if(count == 0) return -1;
             bool isFirst = (method & BinarySearchMethod.FirstExact) == BinarySearchMethod.FirstExact;
             bool isLast = (method & BinarySearchMethod.LastExact) == BinarySearchMethod.LastExact;
             while(lowerBoundIndex <= upperBoundIndex) {
@@ -57,6 +63,57 @@ namespace Utils {
             return -1;
         }
 
+        public static bool BinarySerachRange<T>(IList<T> sortedList, T entry,
+            out int firstIndex, out int lastIndex,
+            IComparer<T> comparer = null,
+            int fromIndex = 0, int toIndex = -1) {
+            if(comparer == null)
+                comparer = Comparer<T>.Default;
+            firstIndex = BinarySearchIndex(
+                sortedList, entry,
+                BinarySearchMethod.FirstExact,
+                fromIndex, toIndex, comparer
+            );
+            lastIndex = firstIndex < 0 ? -1 : BinarySearchIndex(
+                sortedList, entry,
+                BinarySearchMethod.LastExact,
+                firstIndex, toIndex, comparer
+            );
+            return firstIndex >= 0;
+        }
+
+        public static int BinarySearchExacts<T>(this IList<T> sortedList, T entry,
+            IComparer<T> comparer = null,
+            IEqualityComparer<T> equalityComparer = null,
+            int fromIndex = 0, int toIndex = -1) {
+            if(sortedList == null)
+                throw new ArgumentNullException("sortedList");
+            if(equalityComparer == null)
+                equalityComparer = EqualityComparer<T>.Default;
+            int firstIndex, lastIndex;
+            if(BinarySerachRange(sortedList, entry, out firstIndex, out lastIndex, comparer, fromIndex, toIndex))
+                for(int i = firstIndex; i <= lastIndex; i++)
+                    if(equalityComparer.Equals(entry, sortedList[i]))
+                        return i;
+            return -1;
+        }
+
+        public static int BinarySearchLastExacts<T>(this IList<T> sortedList, T entry,
+            IComparer<T> comparer = null,
+            IEqualityComparer<T> equalityComparer = null,
+            int fromIndex = 0, int toIndex = -1) {
+            if(sortedList == null)
+                throw new ArgumentNullException("sortedList");
+            if(equalityComparer == null)
+                equalityComparer = EqualityComparer<T>.Default;
+            int firstIndex, lastIndex;
+            if(BinarySerachRange(sortedList, entry, out firstIndex, out lastIndex, comparer, fromIndex, toIndex))
+                for(int i = lastIndex; i >= firstIndex; i--)
+                    if(equalityComparer.Equals(entry, sortedList[i]))
+                        return i;
+            return -1;
+        }
+
         public static T FindClosestValue<T>(
             this IList<T> sortedList, T key,
             bool findLarger,
@@ -74,38 +131,53 @@ namespace Utils {
             return resultIdx < 0 || sortedList.Count < 1 ? defaultValue : sortedList[resultIdx];
         }
 
-        public static int InsertInOrdered<T>(this IList<T> sortedList, T item, IComparer<T> comparer = null, int fromIndex = 0, int toIndex = -1) {
+        public static int InsertInOrdered<T>(
+            this IList<T> sortedList, T item,
+            IComparer<T> comparer = null,
+            int fromIndex = 0, int toIndex = -1, bool insertFirst = true) {
             if(sortedList == null)
                 throw new ArgumentNullException("sortedList");
             if(sortedList.IsReadOnly)
-                throw new ArgumentException("Cannot alter a read-only collection.");
-            int index = BinarySearchIndex(sortedList, item, BinarySearchMethod.CeilClosest | BinarySearchMethod.FirstExact, fromIndex, toIndex, comparer);
-            if(index >= sortedList.Count) {
-                index = sortedList.Count;
+                throw new ArgumentException(AlterReadOnlyCollectionMsg);
+            if(comparer == null)
+                comparer = Comparer<T>.Default;
+            int index = BinarySearchIndex(
+                sortedList, item,
+                BinarySearchMethod.CeilClosest | (insertFirst ? BinarySearchMethod.FirstExact : BinarySearchMethod.LastExact),
+                fromIndex, toIndex, comparer
+            );
+            if(index >= sortedList.Count)
                 sortedList.Add(item);
-            } else if(index < 0) {
-                index = 0;
+            else if(insertFirst)
+                sortedList.Insert(index < 0 ? 0 : index, item);
+            else if(index >= 0) {
+                if(comparer.Compare(item, sortedList[index]) < 0) {
+                    sortedList.Insert(index, item);
+                } else {
+                    sortedList.Insert(index + 1, item);
+                }
+            } else
                 sortedList.Insert(0, item);
-            } else {
-                sortedList.Insert(index, item);
-            }
             return index;
         }
 
-        public static void InsertInOrdered<T>(this IList<T> sortedList, IEnumerable<T> items, IComparer<T> comparer = null, int fromIndex = 0, int toIndex = -1) {
+        public static void InsertInOrdered<T>(
+            this IList<T> sortedList, IEnumerable<T> items,
+            IComparer<T> comparer = null,
+            int fromIndex = 0, int toIndex = -1) {
             if(sortedList == null)
                 throw new ArgumentNullException("sortedList");
             if(items == null)
                 throw new ArgumentNullException("items");
             if(sortedList.IsReadOnly)
-                throw new ArgumentException("Cannot alter a read-only collection.");
+                throw new ArgumentException(AlterReadOnlyCollectionMsg);
             if(comparer == null)
                 comparer = Comparer<T>.Default;
             const BinarySearchMethod method = BinarySearchMethod.CeilClosest | BinarySearchMethod.FirstExact;
             int index = -1;
             bool hasPreviousItem = false;
             T previousItem = default(T);
-            foreach(var item in items) {
+            foreach(T item in items) {
                 if(!hasPreviousItem)
                     index = BinarySearchIndex(sortedList, item, method, fromIndex, toIndex, comparer);
                 else {

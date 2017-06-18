@@ -36,6 +36,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BMS\BMSEvent.cs" />
+    <Compile Include="BMS\BMSResourceData.cs" />
+    <Compile Include="BMS\EventDispatcher.cs" />
     <Compile Include="Deps\Base36.cs" />
     <Compile Include="BMS\BMSChart.cs" />
     <Compile Include="BMS\BmsonChart.cs" />
