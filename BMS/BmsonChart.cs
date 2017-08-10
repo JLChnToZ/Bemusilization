@@ -260,8 +260,10 @@ namespace BMS {
             string name = rawData.GetChild("name").AsString();
             if(string.IsNullOrEmpty(name)) return;
             IJsonWrapper notes = rawData.GetChild("notes");
-            foreach(IJsonWrapper note in notes.GetChilds())
+            foreach(IJsonWrapper note in notes.GetChilds()) {
                 channels.Add(GetChannelMap(note.GetChild("x").AsInt32()));
+                if(note.GetChild("l").AsInt32() > 0) maxCombos++;
+            }
             maxCombos += notes.Count;
         }
 
