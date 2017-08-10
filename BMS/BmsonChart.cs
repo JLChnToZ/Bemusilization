@@ -76,6 +76,8 @@ namespace BMS {
 
                 ParseSoundChannels(bmev);
             } else {
+                if((parseType & ParseType.ContentSummary) == ParseType.ContentSummary)
+                    ParseSoundChannelsSummary();
                 bmev = null;
             }
             ParseBGAEvents(parseType, bmev);
@@ -243,6 +245,24 @@ namespace BMS {
                     AddEvent(currentEvent);
                 }
             }
+        }
+
+        private void ParseSoundChannelsSummary() {
+            IList soundChannels = bmsonData.GetChild("sound_channels");
+            if(soundChannels == null) return;
+            HashSet<int> channels = new HashSet<int>();
+            for(int i = 0, l = soundChannels.Count; i < l; i++)
+                ParseSoundChannelSummary(soundChannels[i] as IJsonWrapper, channels);
+            ReportChannels(channels);
+        }
+
+        private void ParseSoundChannelSummary(IJsonWrapper rawData, HashSet<int> channels) {
+            string name = rawData.GetChild("name").AsString();
+            if(string.IsNullOrEmpty(name)) return;
+            IJsonWrapper notes = rawData.GetChild("notes");
+            foreach(IJsonWrapper note in notes.GetChilds())
+                channels.Add(GetChannelMap(note.GetChild("x").AsInt32()));
+            maxCombos += notes.Count;
         }
 
         private void ParseBGAEvents(ParseType parseType, List<BMSEvent> bmev) {

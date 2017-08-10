@@ -20,6 +20,7 @@ namespace BMS {
         protected int rank;
         protected float volume;
         protected int maxCombos;
+        protected BMSKeyLayout layout;
         private readonly List<BMSEvent> bmsEvents = new List<BMSEvent>();
         private readonly Dictionary<ResourceId, BMSResourceData> resourceDatas = new Dictionary<ResourceId, BMSResourceData>();
         private readonly Dictionary<ResourceId, BMSResourceData> metaResourceDatas = new Dictionary<ResourceId, BMSResourceData>();
@@ -42,6 +43,8 @@ namespace BMS {
         public virtual int MaxCombos { get { return maxCombos; } }
         public virtual string RawContent { get { return string.Empty; } }
         public virtual bool Randomized { get { return false; } }
+        public virtual int ChannelCount { get { return allChannels.Count; } }
+        public virtual BMSKeyLayout Layout { get { return layout; } }
 
         public IList<BMSEvent> Events {
             get { return new ReadOnlyCollection<BMSEvent>(bmsEvents); }
@@ -54,6 +57,7 @@ namespace BMS {
         public virtual void Parse(ParseType parseType) {
             if((parseType & ParseType.Content) == ParseType.Content)
                 OnDataRefresh();
+            ParseLayout();
         }
 
         private void OnDataRefresh() {
@@ -68,6 +72,20 @@ namespace BMS {
                     if(target != null)
                         target.OnBMSRefresh();
                 }
+        }
+
+        private void ParseLayout() {
+            layout = BMSKeyLayout.None;
+            foreach(int channel in allChannels) {
+                if(channel > 10 && channel < 20)
+                    layout |= (BMSKeyLayout)(1 << (channel - 11));
+                else if(channel > 20 && channel < 30)
+                    layout |= (BMSKeyLayout)(1 << (channel - 12));
+                else if(channel > 50 && channel < 60)
+                    layout |= (BMSKeyLayout)(1 << (channel - 51));
+                else if(channel > 60 && channel < 70)
+                    layout |= (BMSKeyLayout)(1 << (channel - 52));
+            }
         }
 
         protected void ResetAllData(ParseType parseType) {
@@ -95,6 +113,11 @@ namespace BMS {
                 bmsEvents.Clear();
                 allChannels.Clear();
                 OnDataRefresh();
+                layout = BMSKeyLayout.None;
+            } else if((parseType & ParseType.Content) == ParseType.Content) {
+                maxCombos = 0;
+                allChannels.Clear();
+                layout = BMSKeyLayout.None;
             }
         }
 
@@ -124,6 +147,10 @@ namespace BMS {
                 events.Where(ev => ev.IsNote)
                 .Select(ev => ev.data1)
             );
+        }
+
+        protected void ReportChannels(IEnumerable<int> channels) {
+            allChannels.UnionWith(channels);
         }
 
         protected int FindEventIndex(BMSEvent ev) {
@@ -172,5 +199,42 @@ namespace BMS {
         Header = 0x1,
         Resources = 0x2,
         Content = 0x4,
+        ContentSummary = 0x8,
+    }
+
+    [Flags]
+    public enum BMSKeyLayout {
+        // Default
+        None = 0x0,
+
+        // Single Key Definition
+        P11 = 0x1,
+        P12 = 0x2,
+        P13 = 0x4,
+        P14 = 0x8,
+        P15 = 0x10,
+        P16 = 0x20,
+        P17 = 0x40,
+        P18 = 0x80,
+        P19 = 0x100,
+        P21 = 0x200,
+        P22 = 0x400,
+        P23 = 0x800,
+        P24 = 0x1000,
+        P25 = 0x2000,
+        P26 = 0x4000,
+        P27 = 0x8000,
+        P28 = 0x10000,
+        P29 = 0x20000,
+
+        // Known Layout Definition
+        Single5Key = P11 | P12 | P13 | P14 | P15 | P16,
+        Single7Key = P11 | P12 | P13 | P14 | P15 | P18 | P19 | P16,
+        Single9Key = P11 | P12 | P13 | P14 | P15 | P22 | P23 | P24 | P25,
+        Single9KeyAlt = P11 | P12 | P13 | P14 | P15 | P16 | P17 | P18 | P19,
+        Duel10Key = P11 | P12 | P13 | P14 | P15 | P16 |
+            P21 | P22 | P23 | P24 | P25 | P26,
+        Duel14Key = P11 | P12 | P13 | P14 | P15 | P18 | P19 | P16 |
+            P21 | P22 | P23 | P24 | P25 | P28 | P29 | P26,
     }
 }

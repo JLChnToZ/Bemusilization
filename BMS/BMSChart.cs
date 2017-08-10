@@ -45,17 +45,26 @@ namespace BMS {
 
             Stack<IfBlock> ifStack;
             List<BMSEvent> bmev;
+            HashSet<int> channels;
             Random random;
+            int maxCombos = 0;
             if((parseType & ParseType.Content) == ParseType.Content) {
                 ifStack = new Stack<IfBlock>();
                 ifStack.Push(new IfBlock { parsing = true });
                 random = new Random();
                 bmev = new List<BMSEvent>();
                 randomized = false;
+                channels = null;
+            } else if((parseType & ParseType.ContentSummary) == ParseType.ContentSummary) {
+                ifStack = null;
+                random = null;
+                bmev = null;
+                channels = new HashSet<int>();
             } else {
                 ifStack = null;
                 random = null;
                 bmev = null;
+                channels = null;
             }
 
             foreach(string line in bmsContent) {
@@ -104,12 +113,21 @@ namespace BMS {
                         continue;
                     if(ParseContentLine(command2, param1, param2, bmev))
                         continue;
+                } else if((parseType & ParseType.ContentSummary) == ParseType.ContentSummary) {
+                    int combos;
+                    if(ParseSummary(command2, param1, param2, channels, out combos)) {
+                        maxCombos += combos;
+                        continue;
+                    }
                 }
             }
 
             if((parseType & ParseType.Content) == ParseType.Content) {
                 BeatResetFix(bmev);
                 PostProcessContent(bmev);
+            } else if((parseType & ParseType.ContentSummary) == ParseType.ContentSummary) {
+                this.maxCombos = maxCombos;
+                ReportChannels(channels);
             }
 
             base.Parse(parseType);
@@ -264,6 +282,28 @@ namespace BMS {
             }
             return true;
         }
+
+        private static bool ParseSummary(string command2, string strParam1, string strParam2, HashSet<int> channels, out int combos) {
+            int verse;
+            if(!int.TryParse(command2, out verse)) {
+                combos = 0;
+                return false;
+            }
+            int channel = GetChannelNumberById(strParam2);
+            if((channel > 10 && channel < 30) || (channel > 50 && channel < 70)) {
+                channels.Add(channel);
+                int lCombos = 0;
+                for(int i = 0, length = strParam1.Length / 2; i < length; i++) {
+                    int value = Base36.Decode(strParam1.Substring(i * 2, 2));
+                    if(value > 0) lCombos++;
+                }
+                combos = lCombos;
+                return true;
+            }
+            combos = 0;
+            return false;
+        }
+
 
         private bool CheckExecution(Stack<IfBlock> stack, Random random, string command, string strParam) {
             IfBlock current, parent;
