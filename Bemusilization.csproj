@@ -1,71 +1,25 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{7D0E2D4A-D7E8-4645-8FE1-E9406EF6A66C}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>BMS</RootNamespace>
-    <AssemblyName>Bemusilization</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>0.1.2</Version>
+    <Authors>Jeremy Lam</Authors>
+    <Company />
+    <Description>A BMS/Bmson Parser</Description>
+    <PackageLicenseUrl></PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/JLChnToZ/Bemusilization</PackageProjectUrl>
+    <PackageTags />
+    <Copyright>Copyright © JLChnToZ 2013-2019</Copyright>
+    <AssemblyVersion>0.1.2.0</AssemblyVersion>
+    <FileVersion>0.1.2.0</FileVersion>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <None Include="LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="BMS\BMSEvent.cs" />
-    <Compile Include="BMS\BMSResourceData.cs" />
-    <Compile Include="BMS\EventDispatcher.cs" />
-    <Compile Include="Deps\Base36.cs" />
-    <Compile Include="BMS\BMSChart.cs" />
-    <Compile Include="BMS\BmsonChart.cs" />
-    <Compile Include="BMS\Chart.cs" />
-    <Compile Include="Deps\BinarySearch.cs" />
-    <Compile Include="Deps\LitJson\LitJson.Extensions\BoxingPlaceHolder.cs" />
-    <Compile Include="Deps\LitJson\LitJson.Extensions\Extensions.cs" />
-    <Compile Include="Deps\LitJson\LitJson.Extensions\JsonDataConvertible.cs" />
-    <Compile Include="Deps\LitJson\LitJson.Extensions\JsonWrapperEnumerable.cs" />
-    <Compile Include="Deps\LitJson\LitJson.Extensions\JsonWrapperKeyValueEnumerable.cs" />
-    <Compile Include="Deps\LitJson\LitJson\IJsonWrapper.cs" />
-    <Compile Include="Deps\LitJson\LitJson\JsonData.cs" />
-    <Compile Include="Deps\LitJson\LitJson\JsonException.cs" />
-    <Compile Include="Deps\LitJson\LitJson\JsonMapper.cs" />
-    <Compile Include="Deps\LitJson\LitJson\JsonMockWrapper.cs" />
-    <Compile Include="Deps\LitJson\LitJson\JsonReader.cs" />
-    <Compile Include="Deps\LitJson\LitJson\JsonWriter.cs" />
-    <Compile Include="Deps\LitJson\LitJson\Lexer.cs" />
-    <Compile Include="Deps\LitJson\LitJson\ParserToken.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

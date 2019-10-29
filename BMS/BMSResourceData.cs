@@ -10,6 +10,7 @@ namespace BMS {
         bga,
     }
 
+    [Serializable]
     public struct BMSResourceData {
         public ResourceType type;
         public long resourceId;
@@ -17,6 +18,7 @@ namespace BMS {
         public object additionalData;
     }
 
+    [Serializable]
     public struct ResourceId: IEquatable<ResourceId> {
         public ResourceType type;
         public long resourceId;

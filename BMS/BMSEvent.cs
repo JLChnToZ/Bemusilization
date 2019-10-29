@@ -13,6 +13,7 @@ namespace BMS {
         BeatReset
     }
 
+    [Serializable]
     public struct BMSEvent: IComparable<BMSEvent>, IEquatable<BMSEvent> {
         public BMSEventType type;
         public int ticks;
