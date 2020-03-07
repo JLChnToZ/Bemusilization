@@ -13,8 +13,7 @@ namespace LitJson {
                 case JsonType.Long: return source.GetLong() != 0;
                 case JsonType.Double: return source.GetDouble() != 0;
                 case JsonType.String:
-                    bool value;
-                    if(bool.TryParse(source.GetString(), out value))
+                    if(bool.TryParse(source.GetString(), out bool value))
                         return value;
                     break;
                 case JsonType.Array:
@@ -23,7 +22,6 @@ namespace LitJson {
             return defaultValue;
         }
 
-        [CLSCompliant(false)]
         public static sbyte AsInt8(this IJsonWrapper source, sbyte defaultValue = 0) {
             if(source == null) return defaultValue;
             switch(source.GetJsonType()) {
@@ -32,8 +30,7 @@ namespace LitJson {
                 case JsonType.Double: return (sbyte)source.GetDouble();
                 case JsonType.Boolean: return source.GetBoolean() ? (sbyte)1 : (sbyte)0;
                 case JsonType.String:
-                    sbyte value;
-                    if(sbyte.TryParse(source.GetString(), out value))
+                    if(sbyte.TryParse(source.GetString(), out sbyte value))
                         return value;
                     break;
                 case JsonType.Array:
@@ -50,8 +47,7 @@ namespace LitJson {
                 case JsonType.Double: return (short)source.GetDouble();
                 case JsonType.Boolean: return source.GetBoolean() ? (short)1 : (short)0;
                 case JsonType.String:
-                    short value;
-                    if(short.TryParse(source.GetString(), out value))
+                    if(short.TryParse(source.GetString(), out short value))
                         return value;
                     break;
                 case JsonType.Array:
@@ -68,8 +64,7 @@ namespace LitJson {
                 case JsonType.Double: return (int)source.GetDouble();
                 case JsonType.Boolean: return source.GetBoolean() ? 1 : 0;
                 case JsonType.String:
-                    int value;
-                    if(int.TryParse(source.GetString(), out value))
+                    if(int.TryParse(source.GetString(), out int value))
                         return value;
                     break;
                 case JsonType.Array:
@@ -86,8 +81,7 @@ namespace LitJson {
                 case JsonType.Double: return (long)source.GetDouble();
                 case JsonType.Boolean: return source.GetBoolean() ? 1L : 0L;
                 case JsonType.String:
-                    long value;
-                    if(long.TryParse(source.GetString(), out value))
+                    if(long.TryParse(source.GetString(), out long value))
                         return value;
                     break;
                 case JsonType.Array:
@@ -104,8 +98,7 @@ namespace LitJson {
                 case JsonType.Double: return (byte)source.GetDouble();
                 case JsonType.Boolean: return source.GetBoolean() ? (byte)1 : (byte)0;
                 case JsonType.String:
-                    byte value;
-                    if(byte.TryParse(source.GetString(), out value))
+                    if(byte.TryParse(source.GetString(), out byte value))
                         return value;
                     break;
                 case JsonType.Array:
@@ -114,7 +107,6 @@ namespace LitJson {
             return defaultValue;
         }
 
-        [CLSCompliant(false)]
         public static ushort AsUInt16(this IJsonWrapper source, ushort defaultValue = 0) {
             if(source == null) return defaultValue;
             switch(source.GetJsonType()) {
@@ -123,8 +115,7 @@ namespace LitJson {
                 case JsonType.Double: return (ushort)source.GetDouble();
                 case JsonType.Boolean: return source.GetBoolean() ? (ushort)1 : (ushort)0;
                 case JsonType.String:
-                    ushort value;
-                    if(ushort.TryParse(source.GetString(), out value))
+                    if(ushort.TryParse(source.GetString(), out ushort value))
                         return value;
                     break;
                 case JsonType.Array:
@@ -133,7 +124,6 @@ namespace LitJson {
             return defaultValue;
         }
 
-        [CLSCompliant(false)]
         public static uint AsUInt32(this IJsonWrapper source, uint defaultValue = 0) {
             if(source == null) return defaultValue;
             switch(source.GetJsonType()) {
@@ -142,8 +132,7 @@ namespace LitJson {
                 case JsonType.Double: return (uint)source.GetDouble();
                 case JsonType.Boolean: return source.GetBoolean() ? 1U : 0U;
                 case JsonType.String:
-                    uint value;
-                    if(uint.TryParse(source.GetString(), out value))
+                    if(uint.TryParse(source.GetString(), out uint value))
                         return value;
                     break;
                 case JsonType.Array:
@@ -152,7 +141,6 @@ namespace LitJson {
             return defaultValue;
         }
 
-        [CLSCompliant(false)]
         public static ulong AsUInt64(this IJsonWrapper source, ulong defaultValue = 0) {
             if(source == null) return defaultValue;
             switch(source.GetJsonType()) {
@@ -161,8 +149,7 @@ namespace LitJson {
                 case JsonType.Double: return (ulong)source.GetDouble();
                 case JsonType.Boolean: return source.GetBoolean() ? 1UL : 0UL;
                 case JsonType.String:
-                    ulong value;
-                    if(ulong.TryParse(source.GetString(), out value))
+                    if(ulong.TryParse(source.GetString(), out ulong value))
                         return value;
                     break;
                 case JsonType.Array:
@@ -179,8 +166,7 @@ namespace LitJson {
                 case JsonType.Long: return source.GetLong();
                 case JsonType.Boolean: return source.GetBoolean() ? 1F : 0F;
                 case JsonType.String:
-                    float value;
-                    if(float.TryParse(source.GetString(), out value))
+                    if(float.TryParse(source.GetString(), out float value))
                         return value;
                     break;
                 case JsonType.Array:
@@ -197,8 +183,7 @@ namespace LitJson {
                 case JsonType.Long: return source.GetLong();
                 case JsonType.Boolean: return source.GetBoolean() ? 1D : 0D;
                 case JsonType.String:
-                    double value;
-                    if(double.TryParse(source.GetString(), out value))
+                    if(double.TryParse(source.GetString(), out double value))
                         return value;
                     break;
                 case JsonType.Array:
@@ -228,8 +213,7 @@ namespace LitJson {
                     return true;
                 }
                 if(source.IsArray) {
-                    int index;
-                    if(int.TryParse(key, out index) && index >= 0 && index < source.Count) {
+                    if(int.TryParse(key, out int index) && index >= 0 && index < source.Count) {
                         child = (source as IList)[index] as IJsonWrapper;
                         return true;
                     }
@@ -240,12 +224,11 @@ namespace LitJson {
         }
 
         public static bool TryGetChild<TJsonWrapper>(this IJsonWrapper source, string key, out TJsonWrapper child) where TJsonWrapper : IJsonWrapper {
-            IJsonWrapper result;
-            if(TryGetChild(source, key, out result)) {
+            if(TryGetChild(source, key, out IJsonWrapper result)) {
                 child = (TJsonWrapper)result;
                 return true;
             }
-            child = default(TJsonWrapper);
+            child = default;
             return false;
         }
 
@@ -268,12 +251,11 @@ namespace LitJson {
         }
 
         public static bool TryGetChild<TJsonWrapper>(this IJsonWrapper source, int index, out TJsonWrapper child) where TJsonWrapper : IJsonWrapper {
-            IJsonWrapper result;
-            if(TryGetChild(source, index, out result)) {
+            if(TryGetChild(source, index, out IJsonWrapper result)) {
                 child = (TJsonWrapper)result;
                 return true;
             }
-            child = default(TJsonWrapper);
+            child = default;
             return false;
         }
 
@@ -283,8 +265,8 @@ namespace LitJson {
                 foreach(var entry in path) {
                     if(entry == null)
                         child = null;
-                    else if(entry is int)
-                        TryGetChild(child, (int)entry, out child);
+                    else if(entry is int intEntry)
+                        TryGetChild(child, intEntry, out child);
                     else
                         TryGetChild(child, entry.ToString(), out child);
                     if(child == null) break;
@@ -293,30 +275,26 @@ namespace LitJson {
         }
 
         public static bool TryGetChild<TJsonWrapper>(this IJsonWrapper source, out TJsonWrapper child, params object[] path) where TJsonWrapper : IJsonWrapper {
-            IJsonWrapper result;
-            if(TryGetChild(source, out result, path)) {
+            if(TryGetChild(source, out IJsonWrapper result, path)) {
                 child = (TJsonWrapper)result;
                 return true;
             }
-            child = default(TJsonWrapper);
+            child = default;
             return false;
         }
 
         public static IJsonWrapper GetChild(this IJsonWrapper source, string key) {
-            IJsonWrapper child;
-            TryGetChild(source, key, out child);
+            TryGetChild(source, key, out IJsonWrapper child);
             return child;
         }
 
         public static IJsonWrapper GetChild(this IJsonWrapper source, int index) {
-            IJsonWrapper child;
-            TryGetChild(source, index, out child);
+            TryGetChild(source, index, out IJsonWrapper child);
             return child;
         }
 
         public static IJsonWrapper GetChild(this IJsonWrapper source, params object[] path) {
-            IJsonWrapper child;
-            TryGetChild(source, out child, path);
+            TryGetChild(source, out IJsonWrapper child, path);
             return child;
         }
 

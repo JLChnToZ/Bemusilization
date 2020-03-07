@@ -90,8 +90,7 @@ namespace Utils {
                 throw new ArgumentNullException("sortedList");
             if(equalityComparer == null)
                 equalityComparer = EqualityComparer<T>.Default;
-            int firstIndex, lastIndex;
-            if(BinarySerachRange(sortedList, entry, out firstIndex, out lastIndex, comparer, fromIndex, toIndex))
+            if(BinarySerachRange(sortedList, entry, out int firstIndex, out int lastIndex, comparer, fromIndex, toIndex))
                 for(int i = firstIndex; i <= lastIndex; i++)
                     if(equalityComparer.Equals(entry, sortedList[i]))
                         return i;
@@ -106,8 +105,7 @@ namespace Utils {
                 throw new ArgumentNullException("sortedList");
             if(equalityComparer == null)
                 equalityComparer = EqualityComparer<T>.Default;
-            int firstIndex, lastIndex;
-            if(BinarySerachRange(sortedList, entry, out firstIndex, out lastIndex, comparer, fromIndex, toIndex))
+            if(BinarySerachRange(sortedList, entry, out int firstIndex, out int lastIndex, comparer, fromIndex, toIndex))
                 for(int i = lastIndex; i >= firstIndex; i--)
                     if(equalityComparer.Equals(entry, sortedList[i]))
                         return i;
@@ -120,7 +118,7 @@ namespace Utils {
             int lowerBoundIndex = 0,
             int upperBoundIndex = -1,
             IComparer<T> comparer = null,
-            T defaultValue = default(T)) {
+            T defaultValue = default) {
             int resultIdx = BinarySearchIndex(
                 sortedList, key,
                 findLarger ? BinarySearchMethod.CeilClosest : BinarySearchMethod.FloorClosest,
@@ -176,7 +174,7 @@ namespace Utils {
             const BinarySearchMethod method = BinarySearchMethod.CeilClosest | BinarySearchMethod.FirstExact;
             int index = -1;
             bool hasPreviousItem = false;
-            T previousItem = default(T);
+            T previousItem = default;
             foreach(T item in items) {
                 if(!hasPreviousItem)
                     index = BinarySearchIndex(sortedList, item, method, fromIndex, toIndex, comparer);

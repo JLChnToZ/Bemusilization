@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace LitJson {
-    public partial class JsonData: IJsonWrapper, IEquatable<JsonData>, IConvertible, IFormattable {
+    /*public partial class JsonData: IJsonWrapper, IEquatable<JsonData>, IConvertible, IFormattable {
         TypeCode IConvertible.GetTypeCode() {
             switch(type) {
                 case JsonType.Boolean: return TypeCode.Boolean;
@@ -218,5 +218,5 @@ namespace LitJson {
             }
             return rawValue.ToType(conversionType, provider);
         }
-    }
+    }*/
 }

@@ -13,16 +13,14 @@ namespace BMS {
     // https://github.com/JLChnToZ/LitJson
     public class BmsonChart: Chart {
         string rawBmsonContent;
-        string modeHint;
-        string chartName;
         int tickResoultion;
         JsonData bmsonData;
 
         public override string Title {
             get {
-                if(string.IsNullOrEmpty(chartName))
+                if(string.IsNullOrEmpty(ChartName))
                     return title;
-                return string.Format("{0} [{1}]", title, chartName);
+                return string.Format("{0} [{1}]", title, ChartName);
             }
         }
 
@@ -36,28 +34,20 @@ namespace BMS {
             }
         }
 
-        public string ChartName {
-            get { return chartName; }
-        }
+        public string ChartName { get; private set; }
 
-        public string ModeHint {
-            get { return modeHint; }
-        }
+        public string ModeHint { get; private set; }
 
         public BmsonChart(string jsonString) {
             rawBmsonContent = jsonString;
         }
 
-        private BMSEvent DefaultReferencePoint {
-            get {
-                return new BMSEvent {
-                    type = BMSEventType.BPM,
-                    ticks = 0,
-                    time = TimeSpan.Zero,
-                    Data2F = initialBPM
-                };
-            }
-        }
+        private BMSEvent DefaultReferencePoint => new BMSEvent {
+            type = BMSEventType.BPM,
+            ticks = 0,
+            time = TimeSpan.Zero,
+            Data2F = initialBPM
+        };
 
         public override void Parse(ParseType parseType) {
             ResetAllData(parseType);
@@ -101,8 +91,8 @@ namespace BMS {
                 .ToArray()
             );
             genre = info.GetChild("genre").AsString();
-            modeHint = info.GetChild("mode_hint").AsString("beat-7k");
-            chartName = info.GetChild("chart_name").AsString();
+            ModeHint = info.GetChild("mode_hint").AsString("beat-7k");
+            ChartName = info.GetChild("chart_name").AsString();
             playLevel = info.GetChild("level").AsInt32();
             initialBPM = info.GetChild("init_bpm").AsSingle();
             minBpm = Math.Min(minBpm, initialBPM);
@@ -339,7 +329,7 @@ namespace BMS {
         }
 
         private int GetChannelMap(int x) {
-            switch(modeHint) {
+            switch(ModeHint) {
                 case "beat-5k":
                 case "beat-7k":
                 case "beat-10k":

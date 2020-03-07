@@ -13,24 +13,18 @@ namespace BMS {
         static readonly Regex lineMatcher = new Regex("\\r\\n|\\r|\\n", RegexOptions.Compiled);
         string rawBmsContent;
         readonly List<string> bmsContent = new List<string>();
-        int lnType;
         bool randomized;
 
         public BMSChart(string bmsContent) {
             rawBmsContent = bmsContent;
         }
 
-        public override string RawContent {
-            get {
-                if(!string.IsNullOrEmpty(rawBmsContent))
-                    return rawBmsContent;
-                return string.Join("\n", bmsContent.ToArray());
-            }
-        }
+        public override string RawContent =>
+            string.IsNullOrEmpty(rawBmsContent) ?
+            string.Join("\n", bmsContent.ToArray()) :
+            rawBmsContent;
 
-        public int LnType {
-            get { return lnType; }
-        }
+        public int LnType { get; private set; }
 
         public override bool Randomized {
             get { return randomized; }
@@ -39,12 +33,12 @@ namespace BMS {
         public override void Parse(ParseType parseType) {
             ResetAllData(parseType);
             if((parseType & ParseType.Header) == ParseType.Header) {
-                lnType = 1;
+                LnType = 1;
             }
             InitSources();
 
             Stack<IfBlock> ifStack;
-            List<BMSEvent> bmev;
+            ExtendedSortedSet<BMSEvent> bmev;
             HashSet<int> channels;
             Random random;
             int maxCombos = 0;
@@ -52,7 +46,7 @@ namespace BMS {
                 ifStack = new Stack<IfBlock>();
                 ifStack.Push(new IfBlock { parsing = true });
                 random = new Random();
-                bmev = new List<BMSEvent>();
+                bmev = new ExtendedSortedSet<BMSEvent>();
                 randomized = false;
                 channels = null;
             } else if((parseType & ParseType.ContentSummary) == ParseType.ContentSummary) {
@@ -66,59 +60,62 @@ namespace BMS {
                 bmev = null;
                 channels = null;
             }
+            for(int i = 0, c = bmsContent.Count; i < c; i++) {
+                try {
+                    string line = bmsContent[i];
+                    string command, command2, param1, param2;
 
-            foreach(string line in bmsContent) {
-                string command, command2, param1, param2;
-
-                // Command parsing
-                int colonIndex = line.IndexOf(':', 1), spaceIndex = line.IndexOf(' ', 1);
-                int spliiterIndex = colonIndex >= 0 && (spaceIndex > colonIndex || spaceIndex < 0) ? colonIndex : spaceIndex;
-                if(spliiterIndex > 0) {
-                    command = line.Substring(0, spliiterIndex);
-                    if(spliiterIndex + 1 < line.Length)
-                        param1 = line.Substring(spliiterIndex + 1).Trim();
-                    else
+                    // Command parsing
+                    int colonIndex = line.IndexOf(':', 1), spaceIndex = line.IndexOf(' ', 1);
+                    int spliiterIndex = colonIndex >= 0 && (spaceIndex > colonIndex || spaceIndex < 0) ? colonIndex : spaceIndex;
+                    if(spliiterIndex > 0) {
+                        command = line.Substring(0, spliiterIndex);
+                        if(spliiterIndex + 1 < line.Length)
+                            param1 = line.Substring(spliiterIndex + 1).Trim();
+                        else
+                            param1 = string.Empty;
+                    } else {
+                        command = line;
                         param1 = string.Empty;
-                } else {
-                    command = line;
-                    param1 = string.Empty;
-                }
-                command = command.ToLower();
-
-                // Header part
-                if((parseType & ParseType.Header) == ParseType.Header) {
-                    if(ParseHeaderLine(command, param1))
-                        continue;
-                }
-
-                // nnnXX pattern parsing
-                if(command.Length > 4) {
-                    int i = command.Length - 2;
-                    command2 = command.Substring(1, i - 1);
-                    param2 = command.Substring(i);
-                } else {
-                    command2 = command;
-                    param2 = string.Empty;
-                }
-
-                // Resource part
-                if((parseType & ParseType.Resources) == ParseType.Resources) {
-                    if(ParseResourceLine(command2, param1, param2))
-                        continue;
-                }
-
-                // Content part
-                if((parseType & ParseType.Content) == ParseType.Content) {
-                    if(CheckExecution(ifStack, random, command, param1))
-                        continue;
-                    if(ParseContentLine(command2, param1, param2, bmev))
-                        continue;
-                } else if((parseType & ParseType.ContentSummary) == ParseType.ContentSummary) {
-                    int combos;
-                    if(ParseSummary(command2, param1, param2, channels, out combos)) {
-                        maxCombos += combos;
-                        continue;
                     }
+                    command = command.ToLower();
+
+                    // Header part
+                    if((parseType & ParseType.Header) == ParseType.Header) {
+                        if(ParseHeaderLine(command, param1))
+                            continue;
+                    }
+
+                    // nnnXX pattern parsing
+                    if(command.Length > 4) {
+                        int j = command.Length - 2;
+                        command2 = command.Substring(1, j - 1);
+                        param2 = command.Substring(j);
+                    } else {
+                        command2 = command;
+                        param2 = string.Empty;
+                    }
+
+                    // Resource part
+                    if((parseType & ParseType.Resources) == ParseType.Resources) {
+                        if(ParseResourceLine(command2, param1, param2))
+                            continue;
+                    }
+
+                    // Content part
+                    if((parseType & ParseType.Content) == ParseType.Content) {
+                        if(CheckExecution(ifStack, random, command, param1))
+                            continue;
+                        if(ParseContentLine(command2, param1, param2, bmev))
+                            continue;
+                    } else if((parseType & ParseType.ContentSummary) == ParseType.ContentSummary) {
+                        if(ParseSummary(command2, param1, param2, channels, out int combos)) {
+                            maxCombos += combos;
+                            continue;
+                        }
+                    }
+                } catch(Exception ex) {
+                    throw new LineParseException(i, ex);
                 }
             }
 
@@ -197,7 +194,7 @@ namespace BMS {
                     break;
                 case "#lntype":
                     if(int.TryParse(strParam, out intParam))
-                        lnType = intParam;
+                        LnType = intParam;
                     break;
                 default: return false;
             }
@@ -235,9 +232,8 @@ namespace BMS {
             return true;
         }
 
-        private static bool ParseContentLine(string command2, string strParam1, string strParam2, List<BMSEvent> bmev) {
-            int verse;
-            if(!int.TryParse(command2, out verse)) return false;
+        private static bool ParseContentLine(string command2, string strParam1, string strParam2, ExtendedSortedSet<BMSEvent> bmev) {
+            if(!int.TryParse(command2, out int verse)) return false;
             int channel = GetChannelNumberById(strParam2);
             if(channel < 0) return false;
             strParam1 = spaceMatcher.Replace(strParam1, string.Empty);
@@ -246,12 +242,12 @@ namespace BMS {
             switch(channel) {
                 case 1: evType = BMSEventType.WAV; break;
                 case 2:
-                    bmev.InsertInOrdered(new BMSEvent {
+                    bmev.Add(new BMSEvent {
                         measure = verse,
                         beat = 0,
                         Data2F = double.Parse(strParam1),
                         type = BMSEventType.BeatReset
-                    });
+                    }, InsertMode.OldFirst);
                     return true;
                 case 3: evType = BMSEventType.BPM; break;
                 case 4:
@@ -271,21 +267,20 @@ namespace BMS {
             for(int i = 0; i < length; i++) {
                 int value = Base36.Decode(strParam1.Substring(i * 2, 2));
                 if(value > 0) {
-                    bmev.InsertInOrdered(new BMSEvent {
+                    bmev.Add(new BMSEvent {
                         measure = verse,
                         beat = (float)i / length,
                         type = evType,
                         data1 = channel,
                         data2 = value
-                    }, null, 0, -1, false);
+                    }, InsertMode.OldFirst);
                 }
             }
             return true;
         }
 
         private static bool ParseSummary(string command2, string strParam1, string strParam2, HashSet<int> channels, out int combos) {
-            int verse;
-            if(!int.TryParse(command2, out verse)) {
+            if(!int.TryParse(command2, out _)) {
                 combos = 0;
                 return false;
             }
@@ -368,13 +363,15 @@ namespace BMS {
             return true;
         }
 
-        private void PostProcessContent(List<BMSEvent> bmev) {
+        private void PostProcessContent(ExtendedSortedSet<BMSEvent> bmev) {
             Dictionary<int, BMSEvent> lnMarker = new Dictionary<int, BMSEvent>();
             double bpm = initialBPM, beatOffset = 0, beatPerMeas = 1;
             TimeSpan referenceTimePoint = TimeSpan.Zero;
 
             TimeSpan stopTimePoint = TimeSpan.Zero;
             float stopMeasBeat = 0;
+
+            EnsureCapacity(bmev.Count + 1);
 
             AddEvent(new BMSEvent {
                 measure = 0,
@@ -384,21 +381,20 @@ namespace BMS {
             });
 
             foreach(BMSEvent ev in bmev) {
-                BMSEvent converted = new BMSEvent();
-                converted.measure = ev.measure;
-                converted.beat = (float)(ev.beat * beatPerMeas);
+                BMSEvent converted = new BMSEvent {
+                    measure = ev.measure,
+                    beat = (float)(ev.beat * beatPerMeas),
+                };
                 if(ev.measure + ev.beat == stopMeasBeat)
                     converted.time = stopTimePoint;
                 else
                     converted.time = referenceTimePoint + MeasureBeatToTimeSpan(ev.measure + ev.beat - beatOffset, beatPerMeas, bpm);
                 switch(ev.type) {
                     case BMSEventType.BPM:
-                        BMSResourceData bpmData;
-                        int bpmInt;
                         double newBpm;
-                        if(ev.data1 == 8 && TryGetResourceData(ResourceType.bpm, ev.data2, out bpmData)) // Extended BPM
+                        if(ev.data1 == 8 && TryGetResourceData(ResourceType.bpm, ev.data2, out BMSResourceData bpmData)) // Extended BPM
                             newBpm = Convert.ToDouble(bpmData.additionalData);
-                        else if(ev.data1 == 3 && int.TryParse(Base36.Encode((int)ev.data2), NumberStyles.HexNumber, null, out bpmInt)) // BPM
+                        else if(ev.data1 == 3 && int.TryParse(Base36.Encode((int)ev.data2), NumberStyles.HexNumber, null, out int bpmInt)) // BPM
                             newBpm = bpmInt;
                         else
                             continue;
@@ -422,8 +418,7 @@ namespace BMS {
                         referenceTimePoint = converted.time;
                         break;
                     case BMSEventType.STOP:
-                        BMSResourceData stopData;
-                        if(!TryGetResourceData(ResourceType.stop, ev.data2, out stopData))
+                        if(!TryGetResourceData(ResourceType.stop, ev.data2, out BMSResourceData stopData))
                             continue;
                         double stopSeconds = Convert.ToDouble(stopData.additionalData) / bpm * 1.25;
                         if(stopSeconds <= 0)
@@ -450,8 +445,7 @@ namespace BMS {
                         converted.data2 = ev.data2;
                         converted.sliceStart = TimeSpan.Zero;
                         converted.sliceEnd = TimeSpan.MaxValue;
-                        BMSEvent lnStart;
-                        if(lnMarker.TryGetValue(ev.data1, out lnStart)) {
+                        if(lnMarker.TryGetValue(ev.data1, out BMSEvent lnStart)) {
                             converted.type = BMSEventType.LongNoteEnd;
                             int index = FindEventIndex(lnStart);
                             lnStart.time2 = converted.time;
@@ -479,19 +473,19 @@ namespace BMS {
         }
 
         // Insert beat reset after 1 measure of time signature change event according to BMS specifications.
-        private static void BeatResetFix(List<BMSEvent> bmev) { 
+        private static void BeatResetFix(ExtendedSortedSet<BMSEvent> bmev) { 
             BMSEvent[] beatResetEvents = bmev.Where(ev => ev.type == BMSEventType.BeatReset).ToArray();
             for(int i = 0, l = beatResetEvents.Length; i < l; i++) {
                 BMSEvent currentEv = beatResetEvents[i];
                 int meas = currentEv.measure;
                 if(i == l - 1 || (beatResetEvents[i + 1].measure - meas > 1 &&
                     currentEv.Data2F != 1))
-                    bmev.InsertInOrdered(new BMSEvent {
+                    bmev.Add(new BMSEvent {
                         measure = meas + 1,
                         beat = 0,
                         Data2F = 1,
                         type = BMSEventType.BeatReset
-                    });
+                    }, InsertMode.OldFirst);
             }}
 
         private static void AppendString(ref string original, string append) {

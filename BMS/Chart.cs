@@ -133,6 +133,11 @@ namespace BMS {
             if(id < 0) metaResourceDatas[resId] = resData;
         }
 
+        protected void EnsureCapacity(int capacity) {
+            if(bmsEvents.Capacity < capacity)
+                bmsEvents.Capacity = capacity;
+        }
+
         protected int AddEvent(BMSEvent ev) {
             if(ev.IsNote) {
                 allChannels.Add(ev.data1);
@@ -183,8 +188,7 @@ namespace BMS {
         }
 
         public BMSResourceData GetResourceData(ResourceType type, long id) {
-            BMSResourceData result;
-            resourceDatas.TryGetValue(new ResourceId(type, id), out result);
+            resourceDatas.TryGetValue(new ResourceId(type, id), out BMSResourceData result);
             return result;
         }
 

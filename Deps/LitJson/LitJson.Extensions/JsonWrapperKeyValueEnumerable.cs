@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 namespace LitJson.ExtensionsHelpers {
-    class JsonWrapperKeyValueEnumerable: IEnumerable<KeyValuePair<string, IJsonWrapper>> {
+    internal class JsonWrapperKeyValueEnumerable: IEnumerable<KeyValuePair<string, IJsonWrapper>> {
         readonly IJsonWrapper jsonWrapper;
         private class Enumerator: IEnumerator<KeyValuePair<string, IJsonWrapper>> {
             readonly IJsonWrapper jsonWrapper;
@@ -20,7 +20,7 @@ namespace LitJson.ExtensionsHelpers {
             public KeyValuePair<string, IJsonWrapper> Current {
                 get {
                     if(jsonWrapper == null)
-                        return default(KeyValuePair<string, IJsonWrapper>);
+                        return default;
                     if(keyEnumerator != null) {
                         string current = keyEnumerator.Current as string;
                         return new KeyValuePair<string, IJsonWrapper>(

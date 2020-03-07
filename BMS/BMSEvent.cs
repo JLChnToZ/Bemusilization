@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace BMS {
-    public enum BMSEventType {
+    public enum BMSEventType: byte {
         Unknown,
         BMP,
         WAV,
@@ -14,7 +14,7 @@ namespace BMS {
     }
 
     [Serializable]
-    public struct BMSEvent: IComparable<BMSEvent>, IEquatable<BMSEvent> {
+    public struct BMSEvent: IComparable<BMSEvent>, IEquatable<BMSEvent>, IComparable {
         public BMSEventType type;
         public int ticks;
         public int measure;
@@ -25,25 +25,27 @@ namespace BMS {
         public TimeSpan sliceStart, sliceEnd;
 
         public double Data2F {
-            get { return BitConverter.Int64BitsToDouble(data2); }
-            set { data2 = BitConverter.DoubleToInt64Bits(value); }
+            get => BitConverter.Int64BitsToDouble(data2);
+            set => data2 = BitConverter.DoubleToInt64Bits(value);
         }
 
-        public bool IsNote {
-            get {
-                return type == BMSEventType.Note ||
-                    type == BMSEventType.LongNoteStart ||
-                    type == BMSEventType.LongNoteEnd;
-            }
-        }
+        public bool IsNote =>
+            type == BMSEventType.Note ||
+            type == BMSEventType.LongNoteStart ||
+            type == BMSEventType.LongNoteEnd;
 
         public int CompareTo(BMSEvent other) {
+            if(Equals(other)) return 0;
             int comparison;
             if((comparison = time.CompareTo(other.time)) != 0) return comparison;
             if((comparison = ticks.CompareTo(other.ticks)) != 0) return comparison;
             if((comparison = measure.CompareTo(other.measure)) != 0) return comparison;
-            return beat.CompareTo(other.beat);
+            if((comparison = beat.CompareTo(other.beat)) != 0) return comparison;
+            return 0;
         }
+
+        int IComparable.CompareTo(object obj) =>
+            obj is BMSEvent other ? CompareTo(other) : 0;
 
         public bool Equals(BMSEvent other) {
             return type == other.type && (
@@ -54,9 +56,8 @@ namespace BMS {
                 data2 == other.data2;
         }
 
-        public override bool Equals(object obj) {
-            return obj is BMSEvent && Equals((BMSEvent)obj);
-        }
+        public override bool Equals(object obj) =>
+            obj is BMSEvent other && Equals(other);
 
         public override int GetHashCode() {
             unchecked {

@@ -22,4 +22,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="LitJson" Version="0.16.0" />
+  </ItemGroup>
+
 </Project>

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 
 namespace Utils {
     public static class Base36 {
-        private const string CharList = "0123456789abcdefghijklmnopqrstuvwxyz";
+        private static readonly char[] CharList = "0123456789abcdefghijklmnopqrstuvwxyz".ToCharArray();
 
         public static string Encode(int input) {
-            if(input < 0) throw new ArgumentOutOfRangeException("input", input, "input cannot be negative");
+            if(input < 0) throw new ArgumentOutOfRangeException(nameof(input), input, "input cannot be negative");
             var result = new Stack<char>();
             do {
                 result.Push(CharList[input % 36]);
@@ -20,7 +20,7 @@ namespace Utils {
             int pos = input.Length - 1;
             int idx;
             foreach(char c in input.ToLower()) {
-                idx = CharList.IndexOf(c);
+                idx = Array.IndexOf(CharList, c);
                 if(idx < 0) return -1;
                 result += idx * (int)Math.Pow(36, pos);
                 pos--;

@@ -1,45 +1,38 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections;
 
-namespace LitJson.ExtensionsHelpers {
-    internal class PlaceHolder {
+namespace LitJson.ExtensionsHelpers
+{
+    internal struct PlaceHolder {
         public readonly IJsonWrapper source;
-        private readonly ArrayList arrayList;
-        private readonly Hashtable hashtable;
+        private readonly object container;
         private readonly int index;
         private readonly object key;
 
         public PlaceHolder(IJsonWrapper source) {
             this.source = source;
-            this.arrayList = null;
+            this.container = null;
             this.index = 0;
-            this.hashtable = null;
             this.key = null;
         }
 
         public PlaceHolder(IJsonWrapper source, ArrayList arrayList, int index) {
             this.source = source;
-            this.arrayList = arrayList;
+            this.container = arrayList;
             this.index = index;
-            this.hashtable = null;
             this.key = null;
         }
 
         public PlaceHolder(IJsonWrapper source, Hashtable hashtable, object key) {
             this.source = source;
-            this.arrayList = null;
+            this.container = hashtable;
             this.index = 0;
-            this.hashtable = hashtable;
             this.key = key;
         }
 
         public void Assign(object value) {
-            if(arrayList != null)
+            if(container is ArrayList arrayList)
                 arrayList[index] = value;
-            else if(hashtable != null)
+            else if(container is Hashtable hashtable)
                 hashtable[key] = value;
         }
     }
